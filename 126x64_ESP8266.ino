@@ -265,8 +265,8 @@ void loop() {
     lcd.setCursor(0, 3);
     // Compute heat index in Fahrenheit (the default)
     float LCDhif = dht.computeHeatIndex(f, h);
-    lcd.print("Heat Index F: ");
-    lcd.print(LCDhif);
+    lcd.print("IP Address: ");
+    lcd.print(WiFi.localIP());
     lcd.print("'");
     timeSinceLastDisplay = 0;
     // Report every 2 seconds.
