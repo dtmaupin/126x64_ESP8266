@@ -191,6 +191,7 @@ void report(double humidity, double tempC, double tempF, double heatIndexC, doub
 
 int timeSinceLastRead = 0;
 int timeSinceLastDisplay = 0;
+int reportCount = 0;
 void loop() {
    bool toReconnect = false;
 
@@ -211,7 +212,7 @@ void loop() {
 
   device.loop();
 
-  if(timeSinceLastDisplay > 5000) {
+  if(timeSinceLastDisplay > 5000 || reportCount == 0) {
         // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     float h = dht.readHumidity();
@@ -263,16 +264,19 @@ void loop() {
     lcd.print(f);
     lcd.print("'");
     lcd.setCursor(0, 3);
-    // Compute heat index in Fahrenheit (the default)
-    float LCDhif = dht.computeHeatIndex(f, h);
-    lcd.print("IP Address: ");
+    if(reportCount < 2) {
+    lcd.print("IP: ");
     lcd.print(WiFi.localIP());
-    lcd.print("'");
+    } else {
+    lcd.print("Reports: ");
+    lcd.print(reportCount);
+    }
     timeSinceLastDisplay = 0;
     // Report every 2 seconds.
-  if(timeSinceLastRead > 15000) {
+  if(timeSinceLastRead > 15000  || reportCount == 0) {
     report(h, t, f, hic, hif);
     timeSinceLastRead = 0;
+    reportCount++;
   }
   }
   
