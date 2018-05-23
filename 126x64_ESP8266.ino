@@ -1,76 +1,146 @@
-/*
-
-  HelloWorld.ino
-
-  Universal 8bit Graphics Library (https://github.com/olikraus/u8g2/)
-
-  Copyright (c) 2016, olikraus@gmail.com
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, 
-  are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice, this list 
-    of conditions and the following disclaimer.
-    
-  * Redistributions in binary form must reproduce the above copyright notice, this 
-    list of conditions and the following disclaimer in the documentation and/or other 
-    materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-  CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-  INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
-  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
-  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
-  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
-  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
-  STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
-  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  
-
+/* How to use the DHT-22 sensor with Arduino uno
+   Temperature and humidity sensor
 */
 
-#include <Arduino.h>
-#include <U8g2lib.h>
+//Libraries
+#include <DHT.h>;
 
-#ifdef U8X8_HAVE_HW_SPI
-#include <SPI.h>
-#endif
-#ifdef U8X8_HAVE_HW_I2C
+//Constants
+#define DHTPIN 10     // what pin we're connected to
+#define DHTTYPE DHT22   // DHT 22  (AM2302)
+DHT dht(DHTPIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
+//Constants sensor 2
+#define DHT2PIN 9     // what pin we're connected to
+DHT dht2(DHT2PIN, DHTTYPE); //// Initialize DHT sensor for normal 16mhz Arduino
+
+//Variables
+int chk;
+float hum;  //Stores humidity value
+float temp; //Stores temperature value
+float tempF; //Stores Temp in F value
+float hum2; //Stores humidity 2 value
+float temp2; //Stores temp2 value
+float temp2F; //Stores temp2 F value
+
 #include <Wire.h>
-#endif
+#include <LiquidCrystal_PCF8574.h>
+#include "DHT.h"
+int timeSinceLastRead = "0";
+LiquidCrystal_PCF8574 lcd(0x27);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
-/*
-  U8glib Example Overview:
-    Frame Buffer Examples: clearBuffer/sendBuffer. Fast, but may not work with all Arduino boards because of RAM consumption
-    Page Buffer Examples: firstPage/nextPage. Less RAM usage, should work with all Arduino boards.
-    U8x8 Text Only Example: No RAM usage, direct communication with display controller. No graphics, 8x8 Text only.
+int show;
+
+void setup()
+{
+  int error;
+
+  Serial.begin(115200);
+  dht.begin();
+  Serial.println("LCD...");
+
+  while (! Serial);
+
+  Serial.println("Dose: check for LCD");
+
+  // See http://playground.arduino.cc/Main/I2cScanner
+  Wire.begin();
+  Wire.beginTransmission(0x27);
+  error = Wire.endTransmission();
+  Serial.print("Error: ");
+  Serial.print(error);
+
+  if (error == 0) {
+    Serial.println(": LCD found.");
+
+  } else {
+    Serial.println(": LCD not found.");
+  } // if
+
+  lcd.begin(20, 4); // initialize the lcd
+  show = 0;
+} // setup()
+
+void loop()
+{
+  if (show == 0) {
+    if (timeSinceLastRead == 0 || timeSinceLastRead > 5000) {
+    //Read data and store it to variables hum and temp
+    hum = dht.readHumidity();
+    temp= dht.readTemperature();
+    tempF= dht.readTemperature(true);
+    hum2 = dht2.readHumidity();
+    temp2 = dht2.readTemperature();
+    temp2F = dht2.readTemperature(true);
+    lcd.noCursor();
+    lcd.setBacklight(255);
+    lcd.home(); lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Humidity: ");
+    lcd.print(hum);
+    lcd.print("%");
+    lcd.setCursor(0, 1);
+    lcd.print("Temp C: ");
+    lcd.print(temp);
+    lcd.print("'");
+    lcd.setCursor(0, 2);
+    lcd.print("Temp F: ");
+    lcd.print(tempF);
+    lcd.print("'");
+    lcd.setCursor(0, 3);
+    // Compute heat index in Fahrenheit (the default)
+    float hif = dht.computeHeatIndex(tempF, hum);
+    float hif2 = dht.computeHeatIndex(temp2F, hum);
+    lcd.print("Heat Index F: ");
+    lcd.print(hif);
+    lcd.print("'");
+ // End of sensor 1 output
+    delay(5000); //Delay 1 second
+//  Start of sensor 2 output
+    lcd.home(); lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Humidity #2: ");
+    lcd.print(hum2);
+    lcd.print("%");
+    lcd.setCursor(0, 1);
+    lcd.print("Temp #2 C: ");
+    lcd.print(temp2);
+    lcd.print("'");
+    lcd.setCursor(0, 2);
+    lcd.print("Temp #2 F: ");
+    lcd.print(temp2F);
+    lcd.print("'");
+    lcd.setCursor(0, 3);
+    lcd.print("Heat Index F: ");
+    lcd.print(hif2);
+    lcd.print("'");
+    //End of Sensor 2 Section
     
-*/
-
-// Please UNCOMMENT one of the contructor lines below
-// U8g2 Contructor List (Frame Buffer)
-// The complete list is available here: https://github.com/olikraus/u8g2/wiki/u8g2setupcpp
-// Please update the pin numbers according to your setup. Use U8X8_PIN_NONE if the reset pin is not connected
-
-U8G2_SSD1327_MIDAS_128X128_F_4W_SW_SPI u8g2(U8G2_R0, /* clock=*/ 13, /* data=*/ 12, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ 5);
-//U8G2_SSD1327_MIDAS_128X128_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/ 10, /* dc=*/ 9, /* reset=*/ 8);
-
-// End of constructor list
-
-
-void setup(void) {
-  u8g2.begin();
-}
-
-void loop(void) {
-  u8g2.clearBuffer();					// clear the internal memory
-  u8g2.setFont(u8g2_font_ncenB08_tr);	// choose a suitable font
-  u8g2.drawStr(0,10,"Hello World!");	// write something to the internal memory
-  u8g2.sendBuffer();					// transfer internal memory to the display
-  delay(1000);  
-}
+    //Print temp and humidity values to serial monitor
+    Serial.print("Humidity: ");
+    Serial.print(hum);
+    Serial.print(" %, Temp: ");
+    Serial.print(temp);
+    Serial.print(" Celsius, Temp: ");
+    Serial.print(tempF);
+    Serial.print(" Deg F, Heat Index:");
+    Serial.print(hif);
+    Serial.println(" Def F");
+    Serial.print("Humidity2: ");
+    Serial.print(hum2);
+    Serial.print(" %, Temp2: ");
+    Serial.print(temp2);
+    Serial.print(" Celsius, Temp2: ");
+    Serial.print(temp2F);
+    Serial.print(" Deg F, Heat Index2:");
+    Serial.print(hif2);
+    Serial.println(" Def F");
+    //lcd.setBacklight(255);
+    timeSinceLastRead = 1;
+    }
+    else {
+      delay(100); //delay 100 ms
+      timeSinceLastRead += 100;
+    }
+    }
+  }
 
