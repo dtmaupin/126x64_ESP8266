@@ -13,7 +13,7 @@
 #include <ESP8266HTTPClient.h>
 #include <Losant.h>
 
-#define DHTPIN 10     // what digital pin the DHT22 is conected to
+#define DHTPIN 14     // what digital pin the DHT22 is conected to
 #define DHTTYPE DHT22   // There are multiple kinds of DHT sensors
 
 
@@ -153,7 +153,6 @@ void setup() {
 
   Serial.println("Dose: check for LCD");
 
-  // See http://playground.arduino.cc/Main/I2cScanner
   Wire.begin();
   Wire.beginTransmission(0x27);
   error = Wire.endTransmission();
@@ -170,7 +169,7 @@ void setup() {
   lcd.begin(20, 4); // initialize the lcd
   show = 0;
   
-    Serial.println("Device Started");
+  Serial.println("Device Started");
   Serial.println("-------------------------------------");
   Serial.println("Running DHT!");
   Serial.println("-------------------------------------");
@@ -191,6 +190,7 @@ void report(double humidity, double tempC, double tempF, double heatIndexC, doub
 }
 
 int timeSinceLastRead = 0;
+int timeSinceLastDisplay = 0;
 void loop() {
    bool toReconnect = false;
 
@@ -211,9 +211,8 @@ void loop() {
 
   device.loop();
 
-  // Report every 2 seconds.
-  if(timeSinceLastRead > 15000) {
-    // Reading temperature or humidity takes about 250 milliseconds!
+  if(timeSinceLastDisplay > 5000) {
+        // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     float h = dht.readHumidity();
     // Read temperature as Celsius (the default)
@@ -269,15 +268,15 @@ void loop() {
     lcd.print("Heat Index F: ");
     lcd.print(LCDhif);
     lcd.print("'");
-    
+    timeSinceLastDisplay = 0;
+    // Report every 2 seconds.
+  if(timeSinceLastRead > 15000) {
     report(h, t, f, hic, hif);
-
     timeSinceLastRead = 0;
   }
+  }
+  
   delay(100);
   timeSinceLastRead += 100;
+  timeSinceLastDisplay +=100;
 }
-
-
-
-
